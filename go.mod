@@ -2,7 +2,10 @@ module github.com/raza001/go-osinfo-gin
 
 go 1.24.3
 
-require github.com/shirou/gopsutil/v3 v3.24.5
+require (
+	github.com/gin-gonic/gin v1.11.0
+	github.com/shirou/gopsutil/v3 v3.24.5
+)
 
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
@@ -11,7 +14,6 @@ require (
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.11 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
-	github.com/gin-gonic/gin v1.11.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
