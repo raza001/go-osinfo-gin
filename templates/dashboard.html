@@ -1,19 +1,43 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>{{.title}}</title>
 
-    <!-- Tailwind + DaisyUI -->
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/daisyui@4.4.2/dist/full.js"></script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: #000000;
+            color: white;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+        }
+
+        .title-text {
+            color: white;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        canvas {
+            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
+        }
+    </style>
 </head>
 
-<body class="bg-[#0f172a] text-white">
+<body>
 
     <div class="drawer lg:drawer-open">
         <input id="app-drawer" type="checkbox" class="drawer-toggle" />
@@ -22,17 +46,11 @@
         <div class="drawer-content flex flex-col">
 
             <!-- Navbar -->
-            <div class="navbar bg-base-200 border-b border-gray-700">
+            <div class="glass p-4 flex items-center border-b border-gray-700">
                 <div class="flex-none lg:hidden">
-                    <label for="app-drawer" class="btn btn-square btn-ghost">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </label>
+                    <label for="app-drawer" class="btn btn-sm btn-ghost text-white">☰</label>
                 </div>
-                <div class="flex-1 px-2 mx-2 text-xl font-bold text-indigo-300">
+                <div class="flex-1 px-2 mx-2 text-2xl title-text">
                     {{.title}}
                 </div>
             </div>
@@ -43,46 +61,34 @@
                 <!-- Metric Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                    <div class="card bg-base-200 shadow-xl">
-                        <div class="card-body">
-                            <p class="text-sm">CPU Usage</p>
-                            <h2 id="cpu" class="text-4xl font-bold text-indigo-400">--%</h2>
-                        </div>
+                    <div class="glass p-4">
+                        <p class="text-sm text-gray-300">CPU Usage</p>
+                        <h2 id="cpu" class="text-4xl font-bold mt-2">--%</h2>
                     </div>
 
-                    <div class="card bg-base-200 shadow-xl">
-                        <div class="card-body">
-                            <p class="text-sm">Memory Used</p>
-                            <h2 id="mem" class="text-4xl font-bold text-pink-400">--%</h2>
-                        </div>
+                    <div class="glass p-4">
+                        <p class="text-sm text-gray-300">Memory Used</p>
+                        <h2 id="mem" class="text-4xl font-bold mt-2">--%</h2>
                     </div>
 
-                    <div class="card bg-base-200 shadow-xl">
-                        <div class="card-body">
-                            <p class="text-sm">Disk Usage</p>
-                            <h2 id="disk" class="text-4xl font-bold text-yellow-400">--%</h2>
-                        </div>
+                    <div class="glass p-4">
+                        <p class="text-sm text-gray-300">Disk Usage</p>
+                        <h2 id="disk" class="text-4xl font-bold mt-2">--%</h2>
                     </div>
 
-                    <div class="card bg-base-200 shadow-xl">
-                        <div class="card-body">
-                            <p class="text-sm">Network ↓ / ↑</p>
-                            <h2 id="net" class="text-3xl font-bold text-green-400">-- / -- KB/s</h2>
-                        </div>
+                    <div class="glass p-4">
+                        <p class="text-sm text-gray-300">Network ↓ / ↑</p>
+                        <h2 id="net" class="text-2xl font-bold mt-2">-- / --</h2>
                     </div>
 
-                    <div class="card bg-base-200 shadow-xl">
-                        <div class="card-body">
-                            <p class="text-sm">Total Requests</p>
-                            <h2 id="req" class="text-4xl font-bold text-purple-400">--</h2>
-                        </div>
+                    <div class="glass p-4">
+                        <p class="text-sm text-gray-300">Total Requests</p>
+                        <h2 id="req" class="text-4xl font-bold mt-2">--</h2>
                     </div>
 
-                    <div class="card bg-base-200 shadow-xl">
-                        <div class="card-body">
-                            <p class="text-sm">Avg Latency (ms)</p>
-                            <h2 id="latency" class="text-4xl font-bold text-blue-400">--</h2>
-                        </div>
+                    <div class="glass p-4">
+                        <p class="text-sm text-gray-300">Avg Latency (ms)</p>
+                        <h2 id="latency" class="text-4xl font-bold mt-2">--</h2>
                     </div>
 
                 </div>
@@ -90,20 +96,17 @@
                 <!-- CHARTS GRID -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    <!-- CPU Chart -->
-                    <div class="card bg-base-200 p-4 shadow-xl">
+                    <div class="glass p-4">
                         <p class="mb-2 font-semibold">CPU Usage (Last 30 samples)</p>
                         <canvas id="cpuChart"></canvas>
                     </div>
 
-                    <!-- Memory Chart -->
-                    <div class="card bg-base-200 p-4 shadow-xl">
+                    <div class="glass p-4">
                         <p class="mb-2 font-semibold">Memory Usage (Last 30 samples)</p>
                         <canvas id="memChart"></canvas>
                     </div>
 
-                    <!-- ⭐ Total Requests Chart -->
-                    <div class="card bg-base-200 p-4 shadow-xl">
+                    <div class="glass p-4">
                         <p class="mb-2 font-semibold">Total Requests (Last 30 samples)</p>
                         <canvas id="reqChart"></canvas>
                     </div>
@@ -114,8 +117,9 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script>
-        let lastRequests = 0; // ⭐ Store last known value
+        let lastRequests = 0;
 
         async function fetchMetrics() {
             const cpu = await fetch("/cpu").then(r => r.json());
@@ -128,13 +132,12 @@
             document.getElementById("disk").innerText = disk[0]?.usedPercent.toFixed(2) + "%";
             document.getElementById("req").innerText = metrics.total_requests;
             document.getElementById("latency").innerText = metrics.avg_response_time_ms.toFixed(2);
-            document.getElementById("net").innerText = "-- / --";
         }
 
         function pushSample(chart, value) {
             chart.data.labels.push("");
             chart.data.datasets[0].data.push(value);
-            if (chart.data.labels.length > 30) {
+            if (chart.data.labels.length > 40) {
                 chart.data.labels.shift();
                 chart.data.datasets[0].data.shift();
             }
@@ -144,49 +147,25 @@
         // CPU Chart
         const cpuChart = new Chart(document.getElementById("cpuChart"), {
             type: "line",
-            data: {
-                labels: [],
-                datasets: [{
-                    label: "CPU %",
-                    data: [],
-                    borderWidth: 2,
-                    borderColor: "#818cf8",
-                    tension: 0.4
-                }]
-            }
+            data: { labels: [], datasets: [{ label: "CPU %", data: [], borderColor: "white", borderWidth: 2 }] },
+            options: { scales: { y: { ticks: { color: "white" } }, x: { ticks: { color: "white" } } } }
         });
 
         // Memory Chart
         const memChart = new Chart(document.getElementById("memChart"), {
             type: "line",
-            data: {
-                labels: [],
-                datasets: [{
-                    label: "Memory %",
-                    data: [],
-                    borderWidth: 2,
-                    borderColor: "#fb7185",
-                    tension: 0.4
-                }]
-            }
+            data: { labels: [], datasets: [{ label: "Memory %", data: [], borderColor: "white", borderWidth: 2 }] },
+            options: { scales: { y: { ticks: { color: "white" } }, x: { ticks: { color: "white" } } } }
         });
 
-        // ⭐ Requests Chart
+        // Requests Chart
         const reqChart = new Chart(document.getElementById("reqChart"), {
             type: "line",
-            data: {
-                labels: [],
-                datasets: [{
-                    label: "Requests",
-                    data: [],
-                    borderWidth: 2,
-                    borderColor: "#c084fc",
-                    tension: 0.4
-                }]
-            }
+            data: { labels: [], datasets: [{ label: "Requests", data: [], borderColor: "white", borderWidth: 2 }] },
+            options: { scales: { y: { ticks: { color: "white" } }, x: { ticks: { color: "white" } } } }
         });
 
-        // AUTO REFRESH LOOP
+        // Refresh loop
         setInterval(async () => {
             const cpu = await fetch("/cpu").then(r => r.json());
             const mem = await fetch("/mem").then(r => r.json());
@@ -195,13 +174,8 @@
             pushSample(cpuChart, cpu.cpu_percent[0]);
             pushSample(memChart, mem.usedPercent);
 
-            // ⭐ Fix: Never drop to zero
             let currentRequests = metrics.total_requests;
-
-            if (!currentRequests && currentRequests !== 0) {
-                currentRequests = lastRequests;
-            }
-
+            if (!currentRequests && currentRequests !== 0) currentRequests = lastRequests;
             pushSample(reqChart, currentRequests);
             lastRequests = currentRequests;
 
