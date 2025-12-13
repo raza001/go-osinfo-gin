@@ -1,52 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
     <title>{{.title}}</title>
+
+    <!-- Tailwind + DaisyUI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@4.4.2/dist/full.js"></script>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body>
-    <h1>{{.title}}</h1>
+<body class="bg-[#0f172a] text-white">
 
-    <p>CPU: <span id="cpu">loading...</span>%</p>
-    <p>Memory Used: <span id="mem">loading...</span>%</p>
+    <div class="drawer lg:drawer-open">
+        <input id="app-drawer" type="checkbox" class="drawer-toggle" />
 
-    <canvas id="cpuChart" width="400" height="150"></canvas>
+        <!-- Drawer Content -->
+        <div class="drawer-content flex flex-col">
 
-<script>
-async function fetchMetrics() {
-    let cpu = await fetch("/os/cpu").then(r => r.json());
-    let mem = await fetch("/os/mem").then(r => r.json());
+            <!-- Navbar -->
+            <div class="navbar bg-base-200 border-b border-gray-700">
+                <div class="flex-none lg:hidden">
+                    <label for="app-drawer" class="btn btn-square btn-ghost">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </label>
+                </div>
+                <div class="flex-1 px-2 mx-2 text-xl font-bold text-indigo-300">
+                    {{.title}}
+                </div>
+            </div>
 
-    document.getElementById("cpu").innerText = cpu.cpu_percent[0] || 0;
-    document.getElementById("mem").innerText = mem.usedPercent.toFixed(2);
+            <!-- Page Content -->
+            <div class="p-6 space-y-8">
 
-    cpuChart.data.labels.push("");
-    cpuChart.data.datasets[0].data.push(cpu.cpu_percent[0]);
+                <!-- Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-    if (cpuChart.data.labels.length > 30) {
-        cpuChart.data.labels.shift();
-        cpuChart.data.datasets[0].data.shift();
-    }
-    cpuChart.update();
-}
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <p class="text-sm">CPU Usage</p>
+                            <h2 id="cpu" class="text-4xl font-bold text-indigo-400">--%</h2>
+                        </div>
+                    </div>
 
-const ctx = document.getElementById("cpuChart").getContext("2d");
-const cpuChart = new Chart(ctx, {
-    type: "line",
-    data: {
-        labels: [],
-        datasets: [{
-            label: "CPU %",
-            data: [],
-            borderWidth: 2
-        }]
-    }
-});
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <p class="text-sm">Memory Used</p>
+                            <h2 id="mem" class="text-4xl font-bold text-pink-400">--%</h2>
+                        </div>
+                    </div>
 
-setInterval(fetchMetrics, 2000);
-fetchMetrics();
-</script>
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <p class="text-sm">Disk Usage</p>
+                            <h2 id="disk" class="text-4xl font-bold text-yellow-400">--%</h2>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <p class="text-sm">Network ↓ / ↑</p>
+                            <h2 id="net" class="text-3xl font-bold text-green-400">-- / -- KB/s</h2>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <p class="text-sm">Total Requests</p>
+                            <h2 id="req" class="text-4xl font-bold text-purple-400">--</h2>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <p class="text-sm">Avg Latency (ms)</p>
+                            <h2 id="latency" class="text-4xl font-bold text-blue-400">--</h2>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <div class="card bg-base-200 p-4 shadow-xl">
+                        <p class="mb-2 font-semibold">CPU Usage (Last 30 samples)</p>
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+
+                    <div class="card bg-base-200 p-4 shadow-xl">
+                        <p class="mb-2 font-semibold">Memory Usage (Last 30 samples)</p>
+                        <canvas id="memChart"></canvas>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Drawer Sidebar -->
+        <div class="drawer-side">
+            <label for="app-drawer" class="drawer-overlay"></label>
+            <ul class="menu p-4 w-80 bg-base-300 text-base-content">
+
+                <li><a href="/dashboard" class="text-lg">📊 Dashboard</a></li>
+                <li><a href="/info" class="text-lg">ℹ System Info (JSON)</a></li>
+                <li><a href="/metrics" class="text-lg">📈 API Metrics</a></li>
+                <li><a href="/gui-metrics" class="text-lg">🔥 Prometheus Metrics</a></li>
+
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function fetchMetrics() {
+            const cpu = await fetch("/cpu").then(r => r.json());
+            const mem = await fetch("/mem").then(r => r.json());
+            const disk = await fetch("/disk").then(r => r.json());
+            const metrics = await fetch("/metrics").then(r => r.json());
+            const uptime = await fetch("/server-uptime").then(r => r.json());
+
+            document.getElementById("cpu").innerText = cpu.cpu_percent[0].toFixed(2) + "%";
+            document.getElementById("mem").innerText = mem.usedPercent.toFixed(2) + "%";
+            document.getElementById("disk").innerText = disk[0]?.usedPercent.toFixed(2) + "%";
+            document.getElementById("req").innerText = metrics.total_requests;
+            document.getElementById("latency").innerText = metrics.avg_response_time_ms.toFixed(2);
+            document.getElementById("net").innerText = "-- / --";
+        }
+
+        function pushSample(chart, value) {
+            chart.data.labels.push("");
+            chart.data.datasets[0].data.push(value);
+            if (chart.data.labels.length > 30) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            chart.update();
+        }
+
+        // Charts
+        const cpuChart = new Chart(document.getElementById("cpuChart"), {
+            type: "line",
+            data: { labels: [], datasets: [{ label: "CPU %", data: [], borderWidth: 2, borderColor: "#818cf8" }] }
+        });
+
+        const memChart = new Chart(document.getElementById("memChart"), {
+            type: "line",
+            data: { labels: [], datasets: [{ label: "MEM %", data: [], borderWidth: 2, borderColor: "#fb7185" }] }
+        });
+
+        // Auto Refresh
+        setInterval(async () => {
+            const cpu = await fetch("/cpu").then(r => r.json());
+            const mem = await fetch("/mem").then(r => r.json());
+
+            pushSample(cpuChart, cpu.cpu_percent[0]);
+            pushSample(memChart, mem.usedPercent);
+
+            fetchMetrics();
+        }, 2000);
+
+        fetchMetrics();
+    </script>
+
 </body>
+
 </html>

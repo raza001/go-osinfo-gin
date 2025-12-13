@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:embed templates
 var embeddedFiles embed.FS
 
 var dashboardTemplate *template.Template

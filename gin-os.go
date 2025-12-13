@@ -3,6 +3,7 @@ package osinfo
 import (
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -134,9 +135,60 @@ func envHandler(c *gin.Context) {
 }
 
 // ===== METRICS =====
+var ignoreMetrics = map[string]bool{
+	"/metrics":       true,
+	"/health":        true,
+	"/info":          true,
+	"/cpu":           true,
+	"/mem":           true,
+	"/disk":          true,
+	"/env":           true,
+	"/server-uptime": true,
+	"/dashboard":     true,
+	"/static":        true,
+}
+
+func shouldIgnore(path string) bool {
+
+	if path == "" {
+		return false
+	}
+
+	ignored := []string{
+		"/",
+		"/metrics",
+		"/gui-metrics",
+		"/health",
+		"/info",
+		"/cpu",
+		"/mem",
+		"/disk",
+		"/env",
+		"/server-uptime",
+		"/dashboard",
+		"/static",
+	}
+
+	for _, p := range ignored {
+		if strings.HasPrefix(path, p) {
+			return true
+		}
+	}
+
+	return false
+}
 
 func metricsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		path := c.FullPath()
+
+		// Ignore system/monitoring endpoints (including root "/")
+		if shouldIgnore(path) {
+			c.Next()
+			return
+		}
+
 		start := time.Now()
 		c.Next()
 		duration := time.Since(start).Milliseconds()
