@@ -40,7 +40,7 @@
             <!-- Page Content -->
             <div class="p-6 space-y-8">
 
-                <!-- Cards Grid -->
+                <!-- Metric Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                     <div class="card bg-base-200 shadow-xl">
@@ -87,45 +87,41 @@
 
                 </div>
 
-                <!-- Charts -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- CHARTS GRID -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+                    <!-- CPU Chart -->
                     <div class="card bg-base-200 p-4 shadow-xl">
                         <p class="mb-2 font-semibold">CPU Usage (Last 30 samples)</p>
                         <canvas id="cpuChart"></canvas>
                     </div>
 
+                    <!-- Memory Chart -->
                     <div class="card bg-base-200 p-4 shadow-xl">
                         <p class="mb-2 font-semibold">Memory Usage (Last 30 samples)</p>
                         <canvas id="memChart"></canvas>
+                    </div>
+
+                    <!-- ⭐ Total Requests Chart -->
+                    <div class="card bg-base-200 p-4 shadow-xl">
+                        <p class="mb-2 font-semibold">Total Requests (Last 30 samples)</p>
+                        <canvas id="reqChart"></canvas>
                     </div>
 
                 </div>
 
             </div>
         </div>
-
-        <!-- Drawer Sidebar -->
-        <div class="drawer-side">
-            <label for="app-drawer" class="drawer-overlay"></label>
-            <ul class="menu p-4 w-80 bg-base-300 text-base-content">
-
-                <li><a href="/dashboard" class="text-lg">📊 Dashboard</a></li>
-                <li><a href="/info" class="text-lg">ℹ System Info (JSON)</a></li>
-                <li><a href="/metrics" class="text-lg">📈 API Metrics</a></li>
-                <li><a href="/gui-metrics" class="text-lg">🔥 Prometheus Metrics</a></li>
-
-            </ul>
-        </div>
     </div>
 
     <script>
+        let lastRequests = 0; // ⭐ Store last known value
+
         async function fetchMetrics() {
             const cpu = await fetch("/cpu").then(r => r.json());
             const mem = await fetch("/mem").then(r => r.json());
             const disk = await fetch("/disk").then(r => r.json());
             const metrics = await fetch("/metrics").then(r => r.json());
-            const uptime = await fetch("/server-uptime").then(r => r.json());
 
             document.getElementById("cpu").innerText = cpu.cpu_percent[0].toFixed(2) + "%";
             document.getElementById("mem").innerText = mem.usedPercent.toFixed(2) + "%";
@@ -145,24 +141,69 @@
             chart.update();
         }
 
-        // Charts
+        // CPU Chart
         const cpuChart = new Chart(document.getElementById("cpuChart"), {
             type: "line",
-            data: { labels: [], datasets: [{ label: "CPU %", data: [], borderWidth: 2, borderColor: "#818cf8" }] }
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "CPU %",
+                    data: [],
+                    borderWidth: 2,
+                    borderColor: "#818cf8",
+                    tension: 0.4
+                }]
+            }
         });
 
+        // Memory Chart
         const memChart = new Chart(document.getElementById("memChart"), {
             type: "line",
-            data: { labels: [], datasets: [{ label: "MEM %", data: [], borderWidth: 2, borderColor: "#fb7185" }] }
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Memory %",
+                    data: [],
+                    borderWidth: 2,
+                    borderColor: "#fb7185",
+                    tension: 0.4
+                }]
+            }
         });
 
-        // Auto Refresh
+        // ⭐ Requests Chart
+        const reqChart = new Chart(document.getElementById("reqChart"), {
+            type: "line",
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Requests",
+                    data: [],
+                    borderWidth: 2,
+                    borderColor: "#c084fc",
+                    tension: 0.4
+                }]
+            }
+        });
+
+        // AUTO REFRESH LOOP
         setInterval(async () => {
             const cpu = await fetch("/cpu").then(r => r.json());
             const mem = await fetch("/mem").then(r => r.json());
+            const metrics = await fetch("/metrics").then(r => r.json());
 
             pushSample(cpuChart, cpu.cpu_percent[0]);
             pushSample(memChart, mem.usedPercent);
+
+            // ⭐ Fix: Never drop to zero
+            let currentRequests = metrics.total_requests;
+
+            if (!currentRequests && currentRequests !== 0) {
+                currentRequests = lastRequests;
+            }
+
+            pushSample(reqChart, currentRequests);
+            lastRequests = currentRequests;
 
             fetchMetrics();
         }, 2000);

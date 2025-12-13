@@ -16,6 +16,9 @@ func main() {
 	r.GET("/login", func(c *gin.Context) {
 		c.String(http.StatusOK, "Hello, World!")
 	})
+	r.GET("/events", func(c *gin.Context) {
+		c.String(http.StatusOK, "Hello, World!")
+	})
 
 	r.Run(":8080")
 }
