@@ -134,6 +134,11 @@
             const disk = await fetch("/disk").then(r => r.json());
             const metrics = await fetch("/metrics").then(r => r.json());
             const health = await fetch("/health").then(r => r.json());
+            const net = await fetch("/network").then(r => r.json());
+
+            document.getElementById("net").innerText =
+                (net.bytes_recv / 1024 / 1024 / 1024).toFixed(3) + " GB ↓ / " +
+                (net.bytes_sent / 1024 / 1024 / 1024).toFixed(3) + " GB ↑";
 
             document.getElementById("cpu").innerText = cpu.cpu_percent[0].toFixed(2) + "%";
             document.getElementById("mem").innerText = mem.usedPercent.toFixed(2) + "%";
@@ -204,6 +209,7 @@
             const cpu = await fetch("/cpu").then(r => r.json());
             const mem = await fetch("/mem").then(r => r.json());
             const metrics = await fetch("/metrics").then(r => r.json());
+            const net = await fetch("/network").then(r => r.json());
 
             pushSample(cpuChart, cpu.cpu_percent[0]);
             pushSample(memChart, mem.usedPercent);
@@ -213,6 +219,10 @@
 
             pushSample(reqChart, currentRequests);
             lastRequests = currentRequests;
+
+            document.getElementById("net").innerText =
+                (net.bytes_recv / 1024 / 1024 / 1024).toFixed(3) + " GB ↓ / " +
+                (net.bytes_sent / 1024 / 1024 / 1024).toFixed(3) + " GB ↑";
 
             fetchMetrics();
         }, 2000);
