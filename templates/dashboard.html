@@ -13,26 +13,25 @@
 
     <style>
         body {
-            background: #000000;
-            color: white;
+            background: #000;
+            color: #fff;
         }
 
         .glass {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(12px);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
             border-radius: 12px;
         }
 
         .title-text {
             color: white;
             font-weight: 800;
-            letter-spacing: 1px;
         }
 
         canvas {
-            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.35));
         }
     </style>
 </head>
@@ -60,6 +59,11 @@
 
                 <!-- Metric Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                    <div class="glass p-4">
+                        <p class="text-sm text-gray-300">Health Status</p>
+                        <h2 id="health" class="text-3xl font-bold mt-2">--</h2>
+                    </div>
 
                     <div class="glass p-4">
                         <p class="text-sm text-gray-300">CPU Usage</p>
@@ -96,16 +100,19 @@
                 <!-- CHARTS GRID -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+                    <!-- CPU Chart -->
                     <div class="glass p-4">
                         <p class="mb-2 font-semibold">CPU Usage (Last 30 samples)</p>
                         <canvas id="cpuChart"></canvas>
                     </div>
 
+                    <!-- Memory Chart -->
                     <div class="glass p-4">
                         <p class="mb-2 font-semibold">Memory Usage (Last 30 samples)</p>
                         <canvas id="memChart"></canvas>
                     </div>
 
+                    <!-- Total Requests Chart -->
                     <div class="glass p-4">
                         <p class="mb-2 font-semibold">Total Requests (Last 30 samples)</p>
                         <canvas id="reqChart"></canvas>
@@ -126,46 +133,73 @@
             const mem = await fetch("/mem").then(r => r.json());
             const disk = await fetch("/disk").then(r => r.json());
             const metrics = await fetch("/metrics").then(r => r.json());
+            const health = await fetch("/health").then(r => r.json());
 
             document.getElementById("cpu").innerText = cpu.cpu_percent[0].toFixed(2) + "%";
             document.getElementById("mem").innerText = mem.usedPercent.toFixed(2) + "%";
             document.getElementById("disk").innerText = disk[0]?.usedPercent.toFixed(2) + "%";
             document.getElementById("req").innerText = metrics.total_requests;
             document.getElementById("latency").innerText = metrics.avg_response_time_ms.toFixed(2);
+            document.getElementById("health").innerText = health.status.toUpperCase();
         }
 
         function pushSample(chart, value) {
             chart.data.labels.push("");
             chart.data.datasets[0].data.push(value);
+
             if (chart.data.labels.length > 40) {
                 chart.data.labels.shift();
                 chart.data.datasets[0].data.shift();
             }
+
             chart.update();
         }
 
-        // CPU Chart
         const cpuChart = new Chart(document.getElementById("cpuChart"), {
             type: "line",
-            data: { labels: [], datasets: [{ label: "CPU %", data: [], borderColor: "white", borderWidth: 2 }] },
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "CPU %",
+                    data: [],
+                    borderColor: "white",
+                    borderWidth: 2,
+                    tension: 0.4
+                }]
+            },
             options: { scales: { y: { ticks: { color: "white" } }, x: { ticks: { color: "white" } } } }
         });
 
-        // Memory Chart
         const memChart = new Chart(document.getElementById("memChart"), {
             type: "line",
-            data: { labels: [], datasets: [{ label: "Memory %", data: [], borderColor: "white", borderWidth: 2 }] },
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Memory %",
+                    data: [],
+                    borderColor: "white",
+                    borderWidth: 2,
+                    tension: 0.4
+                }]
+            },
             options: { scales: { y: { ticks: { color: "white" } }, x: { ticks: { color: "white" } } } }
         });
 
-        // Requests Chart
         const reqChart = new Chart(document.getElementById("reqChart"), {
             type: "line",
-            data: { labels: [], datasets: [{ label: "Requests", data: [], borderColor: "white", borderWidth: 2 }] },
+            data: {
+                labels: [],
+                datasets: [{
+                    label: "Requests",
+                    data: [],
+                    borderColor: "white",
+                    borderWidth: 2,
+                    tension: 0.4
+                }]
+            },
             options: { scales: { y: { ticks: { color: "white" } }, x: { ticks: { color: "white" } } } }
         });
 
-        // Refresh loop
         setInterval(async () => {
             const cpu = await fetch("/cpu").then(r => r.json());
             const mem = await fetch("/mem").then(r => r.json());
@@ -176,6 +210,7 @@
 
             let currentRequests = metrics.total_requests;
             if (!currentRequests && currentRequests !== 0) currentRequests = lastRequests;
+
             pushSample(reqChart, currentRequests);
             lastRequests = currentRequests;
 

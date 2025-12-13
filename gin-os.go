@@ -13,6 +13,7 @@ import (
 	disk "github.com/shirou/gopsutil/v3/disk"
 	host "github.com/shirou/gopsutil/v3/host"
 	mem "github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v3/net"
 )
 
 // Metrics tracks request statistics
@@ -54,6 +55,9 @@ func RegisterRoutes(r gin.IRouter, prefix string) {
 
 	// Static files
 	grp.GET("/static/*filepath", staticHandler)
+
+	grp.GET("/network", networkHandler)
+
 }
 
 func healthHandler(c *gin.Context) {
@@ -222,5 +226,18 @@ func serverUptimeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"server_uptime_seconds": uptime,
 		"server_start_time":     metrics.StartTime,
+	})
+}
+
+func networkHandler(c *gin.Context) {
+	counters, err := net.IOCounters(false)
+	if err != nil || len(counters) == 0 {
+		c.JSON(500, gin.H{"error": "cannot read network IO"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"bytes_sent": counters[0].BytesSent,
+		"bytes_recv": counters[0].BytesRecv,
 	})
 }
