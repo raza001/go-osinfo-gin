@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	cpu "github.com/shirou/gopsutil/v3/cpu"
 	disk "github.com/shirou/gopsutil/v3/disk"
 	host "github.com/shirou/gopsutil/v3/host"
@@ -17,7 +18,7 @@ import (
 type Metrics struct {
 	mu                sync.RWMutex
 	TotalRequests     int64
-	TotalResponseTime int64 // in milliseconds
+	TotalResponseTime int64
 	StatusCodes       map[int]int64
 	StartTime         time.Time
 }
@@ -27,10 +28,10 @@ var metrics = &Metrics{
 	StartTime:   time.Now(),
 }
 
-// RegisterRoutes registers a set of endpoints under the provided router group or engine.
-// Example: RegisterRoutes(r, "/os") will create /os/health, /os/info, /os/mem, etc.
+// RegisterRoutes registers all OS endpoints and dashboard
 func RegisterRoutes(r gin.IRouter, prefix string) {
-	// Add metrics middleware to all routes
+
+	// Middleware for metrics
 	r.Use(metricsMiddleware())
 
 	grp := r.Group(prefix)
@@ -43,6 +44,15 @@ func RegisterRoutes(r gin.IRouter, prefix string) {
 	grp.GET("/env", envHandler)
 	grp.GET("/metrics", metricsHandler)
 	grp.GET("/server-uptime", serverUptimeHandler)
+
+	// Prometheus handler
+	grp.GET("/gui-metrics", gin.WrapH(promhttp.Handler()))
+
+	// Dashboard UI
+	grp.GET("/dashboard", serveDashboard)
+
+	// Static files
+	grp.GET("/static/*filepath", staticHandler)
 }
 
 func healthHandler(c *gin.Context) {
@@ -100,7 +110,7 @@ func diskHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	out := make([]gin.H, 0, len(parts))
+	out := []gin.H{}
 	for _, p := range parts {
 		usage, err := disk.Usage(p.Mountpoint)
 		if err != nil {
@@ -120,11 +130,11 @@ func diskHandler(c *gin.Context) {
 }
 
 func envHandler(c *gin.Context) {
-	envs := os.Environ()
-	c.JSON(http.StatusOK, gin.H{"env": envs})
+	c.JSON(http.StatusOK, gin.H{"env": os.Environ()})
 }
 
-// metricsMiddleware tracks request metrics
+// ===== METRICS =====
+
 func metricsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -139,25 +149,22 @@ func metricsMiddleware() gin.HandlerFunc {
 	}
 }
 
-// metricsHandler returns collected request metrics
 func metricsHandler(c *gin.Context) {
 	metrics.mu.RLock()
 	defer metrics.mu.RUnlock()
 
-	avgResponseTime := float64(0)
+	avg := float64(0)
 	if metrics.TotalRequests > 0 {
-		avgResponseTime = float64(metrics.TotalResponseTime) / float64(metrics.TotalRequests)
+		avg = float64(metrics.TotalResponseTime) / float64(metrics.TotalRequests)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"total_requests":       metrics.TotalRequests,
-		"total_response_time":  metrics.TotalResponseTime,
-		"avg_response_time_ms": avgResponseTime,
+		"avg_response_time_ms": avg,
 		"status_codes":         metrics.StatusCodes,
 	})
 }
 
-// serverUptimeHandler returns how long the server has been running
 func serverUptimeHandler(c *gin.Context) {
 	uptime := time.Since(metrics.StartTime).Seconds()
 	c.JSON(http.StatusOK, gin.H{

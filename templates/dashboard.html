@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{.title}}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <h1>{{.title}}</h1>
+
+    <p>CPU: <span id="cpu">loading...</span>%</p>
+    <p>Memory Used: <span id="mem">loading...</span>%</p>
+
+    <canvas id="cpuChart" width="400" height="150"></canvas>
+
+<script>
+async function fetchMetrics() {
+    let cpu = await fetch("/os/cpu").then(r => r.json());
+    let mem = await fetch("/os/mem").then(r => r.json());
+
+    document.getElementById("cpu").innerText = cpu.cpu_percent[0] || 0;
+    document.getElementById("mem").innerText = mem.usedPercent.toFixed(2);
+
+    cpuChart.data.labels.push("");
+    cpuChart.data.datasets[0].data.push(cpu.cpu_percent[0]);
+
+    if (cpuChart.data.labels.length > 30) {
+        cpuChart.data.labels.shift();
+        cpuChart.data.datasets[0].data.shift();
+    }
+    cpuChart.update();
+}
+
+const ctx = document.getElementById("cpuChart").getContext("2d");
+const cpuChart = new Chart(ctx, {
+    type: "line",
+    data: {
+        labels: [],
+        datasets: [{
+            label: "CPU %",
+            data: [],
+            borderWidth: 2
+        }]
+    }
+});
+
+setInterval(fetchMetrics, 2000);
+fetchMetrics();
+</script>
+</body>
+</html>
