@@ -1,6 +1,7 @@
 # go-osinfo-gin
 
 A tiny Go package that exposes system/OS information and runtime metrics as HTTP endpoints using Gin.
+`github.com/raza001/go-osinfo-gin`
 
 ## Features
 
